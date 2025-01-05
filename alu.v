@@ -1,3 +1,4 @@
+// Copyright 2024-2025 Fe-Ti
 `include "./mux.v"
 
 module adder1( // only for testing;
