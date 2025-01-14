@@ -8,7 +8,8 @@ module testbench3();
     reg [4:0] sel;
     wire [31:0] y;
     wire cout;
-    mux dut ({arr[31],arr[30],arr[29],arr[28],arr[27],arr[26],arr[25],arr[24],arr[23],arr[22],arr[21],arr[20],arr[19],arr[18],arr[17],arr[16],arr[15],arr[14],arr[13],arr[12],arr[11],arr[10],arr[9],arr[8],arr[7],arr[6],arr[5],arr[4],arr[3],arr[2],arr[1],arr[0]}, sel, y);
+//    mux dut ({arr[31],arr[30],arr[29],arr[28],arr[27],arr[26],arr[25],arr[24],arr[23],arr[22],arr[21],arr[20],arr[19],arr[18],arr[17],arr[16],arr[15],arr[14],arr[13],arr[12],arr[11],arr[10],arr[9],arr[8],arr[7],arr[6],arr[5],arr[4],arr[3],arr[2],arr[1],arr[0]}, sel, y);
+    mux dut (arr, sel, y);
     //mux dut ({arr[31],arr[30],arr[29],arr[28],arr[27],arr[26],arr[25],arr[24],arr[23],arr[22],arr[21],arr[20],arr[19],arr[18],arr[17],arr[16],arr[15],arr[14],arr[13],arr[12],arr[11],arr[10],arr[9],arr[8],arr[7],arr[6],arr[5],arr[4],arr[3],arr[2],arr[1],arr[0]}, sel, y);
     initial begin
         success = 0;
