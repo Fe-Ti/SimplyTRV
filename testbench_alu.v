@@ -17,9 +17,11 @@ module testbench3();
     .eq         (flags[1]),
     .lt         (flags[2]),
     .ge         (flags[3]),
+    .lt         (flags[5]),
+    .ge         (flags[6]),
     .zerof      (flags[4]),
-    .negativef  (flags[5]),
-    .carryf     (flags[6]) //, overf, 
+    //~ .negativef  (flags[5]),
+    //~ .carryf     (flags[6]) //, overf, 
     );
     initial begin
         success = 0;

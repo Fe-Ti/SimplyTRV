@@ -52,8 +52,8 @@ module ALU32I(
     input wire [31:0] a,b,
     input wire [3:0] selectop, // {funct7[5], funct3[2:0]}
     output wire [31:0] out,
-    output wire neq, eq, lt, ge,
-                zerof, negativef,carryf //, overf, 
+    output wire neq, eq, lt, ge, ltu, geu,
+                zerof //, negativef,carryf //, overf, 
 );
 wire [2:0] muxselect = selectop[2:0]; // funct3[2:0] for mux select
 wire cin = selectop[3]; // funct7[5] for diff SRL/SRA, ADD/SUB
@@ -95,10 +95,11 @@ assign neq = |(a ^ b);
 assign eq = ~(neq);
 assign lt = slt[0];
 assign ge = ~lt;
+assign ltu = sltu[0];
+assign geu = ~ltu;
 assign zerof = ~|(aplusb);
-assign negativef = aplusb[31];
-//~ assign overf ;
-assign carryf = cout;
+//~ assign negativef = aplusb[31];
+//~ assign carryf = cout;
 
 endmodule
 

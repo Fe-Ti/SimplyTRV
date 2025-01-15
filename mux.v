@@ -48,3 +48,20 @@ module demux #(parameter BUSWIDTH=32, parameter SELWIDTH=5)(
     end
 endmodule
 
+//~ module demuxw #(parameter BUSWIDTH=32, parameter SELWIDTH=5)(
+            //~ output wire [BUSWIDTH*(2**SELWIDTH)-1:0] outdata,
+            //~ input wire [SELWIDTH-1:0] select,
+            //~ input wire [BUSWIDTH-1:0] indata
+            //~ );
+    //~ output reg [BUSWIDTH*(2**SELWIDTH)-1:0] data;
+    //~ assign outdata = data;
+    //~ always @ (indata or select) begin
+        //~ data = 0;
+        //~ for (integer i = 0; i < 2**SELWIDTH; i = i + 1) begin
+            //~ if (select == i) begin
+                //~ data[BUSWIDTH*i +: BUSWIDTH] = indata[BUSWIDTH-1:0];
+            //~ end
+        //~ end
+    //~ end
+//~ endmodule
+
