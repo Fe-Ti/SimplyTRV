@@ -14,7 +14,8 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
                 memstoref,
     output wire [1:0] aluarg2sel,
     output wire [3:0] selectop,
-    output wire [4:0] dest_reg, source_reg1, source_reg2
+    output wire [4:0] dest_reg, source_reg1, source_reg2,
+    output wire dest_reg_we //, mem_we
 );
     wire we_rd, typer, typei, types, typeb, typeu, typej;
     wire [6:0]   opcode;
@@ -37,32 +38,48 @@ module cpu (
     input wire [31:0] from_memory,
     input wire sys_clk, sys_reset,
     output wire [31:0] to_memory, memory_address, progctr
+    output wire memstore_flag;
     );
     
-    wire branchf, jumpf, memloadf, memstoref;
+    wire branchf, jumpf, memloadf, memstoref, regfile_we;
+    wire [1:0] aluarg2sel;
+    wire [3:0] selectop;
+    wire [4:0] dest_reg, source_reg1, source_reg2;
     wire [6:0] aluflags;
-    wire [31:0] memaddr, imm12, imm20;
+    wire [31:0] memaddr, next_pc, imm12, imm20, aluarg1, aluarg2, aluresult, regfile_indata;
     reg [31:0]  pc; // program ctr
-    assign progctr = pc;
-    assign pc_imm_step = branchf ? imm12 : 4;
-    assign pc_adder = pc + pc_imm_step;
-    assign next_pc = jumpf ? aluresult : pc_adder;
 
     RV32I_decoder_unit dcu (
     .instruction (instruction),
     .aluflags (aluflags),
-    .imm12 (imm12),
-    .imm20 (imm20),
-    .jumpf (jumpf),
-    .branchf (branchf),
-    .memloadf (memloadf),
-    .memstoref (memstoref),
-    .aluarg2sel (aluarg2sel),
-    .selectop (selectop),
-    .dest_reg (dest_reg),
-    .source_reg1 (source_reg1),
-    .source_reg2 (source_reg2)
+    .imm12 (imm12), .imm20 (imm20),
+    .jumpf (jumpf), .branchf (branchf),
+    .memloadf (memloadf), .memstoref (memstoref),
+    .aluarg2sel (aluarg2sel), .selectop (selectop),
+    .dest_reg (dest_reg), .source_reg1 (source_reg1), .source_reg2 (source_reg2),
+    .dest_reg_we(regfile_we)
     );
+    
+    assign progctr = pc;
+    assign pc_imm_step = branchf ? imm12 : 4;
+    assign pc_adder = pc + pc_imm_step;
+    assign next_pc = jumpf ? aluresult : pc_adder;
+    assign aluarg1 = jumpf ? pc : drs1;
+    mux aluarg2mux (
+                    .indata ({
+                    drs2, imm12, imm20, 32'b0 // TODO: checkout order
+                    }),
+            .select (aluarg2sel),
+            .outdata (aluarg2)
+    );
+    // for writing into memory
+    assign memaddr = aluresult; // TODO: improve
+    assign memory_address = memaddr;
+    assign to_memory = drs2;
+    assign memstore_flag = memstoref;
+    // generating input to regfile
+    assign memloaded_aluresult = memloadf ? from_memory : aluresult;
+    assign regfile_indata = jumpf ? pc_adder : memloaded_aluresult;
     
     ALU32I ALU(
     .a (aluarg1),
