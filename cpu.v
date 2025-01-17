@@ -27,7 +27,7 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     assign ge = aluflags[3];
     assign ltu = aluflags[4];
     assign geu = aluflags[5];
-    assign zerof = aluflags[6])
+    assign zerof = aluflags[6];
     wire we_rd, typeR, typeI, typeS, typeB, typeU, typeJ;
     wire immsign, aluopf;
     wire [2:1] func3;
@@ -67,16 +67,16 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
         rdest_reg_we = 0;
         raluopf = 0;
         nzerordf = 1; nzerors1f = 1; //nzerors2f = 1;
-        case(opcode[5:2]):      // so for now forget about opcode[1:0]
-            0'b01_100   : begin inst_type = 6'b100_000; raluopf = 1;end // R ALU OP
-            0'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
-            0'b11_001   : begin inst_type = 6'b010_000; rjumpf = 1; raluarg2sel = 1; end // I JALR
-            0'b00_000   : begin inst_type = 6'b010_000; rmemloadf = 1; raluarg2sel = 1; end // I LOAD
-            0'b01_000   : begin inst_type = 6'b001_000; rmemstoref = 1; end // S STORE
-            0'b11_000   : begin inst_type = 6'b000_100; nzerordf = 0; rbranchf = 1; end // B
-            0'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; end // U LUI
-            0'b00_101   : begin inst_type = 6'b000_010; raluarg1sel = 1; raluarg2sel = 1; end // U AUIPC
-            0'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
+        case(opcode[6:2])      // so for now forget about opcode[1:0]
+            5'b01_100   : begin inst_type = 6'b100_000; raluopf = 1;end // R ALU OP
+            5'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
+            5'b11_001   : begin inst_type = 6'b010_000; rjumpf = 1; raluarg2sel = 1; end // I JALR
+            5'b00_000   : begin inst_type = 6'b010_000; rmemloadf = 1; raluarg2sel = 1; end // I LOAD
+            5'b01_000   : begin inst_type = 6'b001_000; rmemstoref = 1; end // S STORE
+            5'b11_000   : begin inst_type = 6'b000_100; nzerordf = 0; rbranchf = 1; end // B
+            5'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; end // U LUI
+            5'b00_101   : begin inst_type = 6'b000_010; raluarg1sel = 1; raluarg2sel = 1; end // U AUIPC
+            5'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
             default     : begin inst_type = 6'b000_000; end // NOP
         endcase
     end
@@ -91,10 +91,10 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     //~ assign imm11_0 = instruction[];
     //~ assign imm19_12 = instruction[];
     assign imm20U = {instruction[31:12], 12'b0};
-    assign imm20J = {12{immsign}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
+    assign imm20J = {{12{immsign}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
     assign imm11IS = typeS ? {instruction[30:25], instruction[11:7]} : instruction[30:20];
-    assign imm12IS = {21{immsign}, imm11IS};
-    assign imm12B = {20{immsign}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
+    assign imm12IS = {{21{immsign}}, imm11IS};
+    assign imm12B = {{20{immsign}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
     assign imm12 = typeB ? imm12B : imm12IS;
     assign imm20 = typeJ ? imm20J : imm20U;
     assign imm = (typeJ | typeU) ? imm20 : imm12;
@@ -105,8 +105,8 @@ module cpu (
     input wire [31:0] instruction,
     input wire [31:0] from_memory,
     input wire sys_clk, sys_reset,
-    output wire [31:0] to_memory, memory_address, progctr
-    output wire memload_flag, memstore_flag;
+    output wire [31:0] to_memory, memory_address, progctr,
+    output wire memload_flag, memstore_flag
     );
     wire branchf, jumpf, aluarg1sel, aluarg2sel, memloadf, memstoref, regfile_we;
     //~ wire [1:0] aluarg2sel;
@@ -122,7 +122,7 @@ module cpu (
     .imm (imm), //.imm20 (imm20),
     .jumpf (jumpf), .branchf (branchf),
     .memloadf (memloadf), .memstoref (memstoref),
-    .(aluarg1sel), .aluarg2sel (aluarg2sel), .selectop (selectop),
+    .aluarg1sel (aluarg1sel), .aluarg2sel (aluarg2sel), .selectop (selectop),
     .dest_reg (dest_reg), .source_reg1 (source_reg1), .source_reg2 (source_reg2),
     .dest_reg_we(regfile_we)
     );
