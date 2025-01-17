@@ -6,30 +6,98 @@
 module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     input wire [31:0]   instruction,
     input wire [6:0]   aluflags,
-    output wire [31:0]  imm12, // sign extended 12 bit imm
-                        imm20,  // imm20 << 12
-    output wire jumpf, // aka aluarg1sel
+    output wire [31:0]  imm,
+                    // sign extended 12 bit imm12 or
+                    // imm20,  // imm20 << 12
+    output wire jumpf,
                 branchf,
                 memloadf,
                 memstoref,
-    output wire [1:0] aluarg2sel,
+                aluarg1sel,
+                aluarg2sel,
+    //~ output wire [1:0] aluarg2sel,
     output wire [3:0] selectop,
     output wire [4:0] dest_reg, source_reg1, source_reg2,
     output wire dest_reg_we //, mem_we
 );
-    wire we_rd, typer, typei, types, typeb, typeu, typej;
-    wire [6:0]   opcode;
+    wire neq, eq, lt, ge, ltu, geu, zerof, branch_ready;
+    assign neq = aluflags[0];
+    assign eq = aluflags[1];
+    assign lt = aluflags[2];
+    assign ge = aluflags[3];
+    assign ltu = aluflags[4];
+    assign geu = aluflags[5];
+    assign zerof = aluflags[6])
+    wire we_rd, typeR, typeI, typeS, typeB, typeU, typeJ;
+    wire immsign, aluopf;
     wire [2:1] func3;
-    wire [6:0] func7;
-    wire [11:0] imm12, imm12B, imm12S;
-    assign opcode = instruction[6:0];
+    reg  [5:0] inst_type;
+    wire [6:0] opcode, func7;
+    wire [10:0] imm11IS;
+    wire [31:0] imm12, imm20, imm12IS, imm12B, imm20U, imm20J;
+    
+    assign typeR = inst_type[5]; // just for ease of case :)
+    assign typeI = inst_type[4];
+    assign typeS = inst_type[3];
+    assign typeB = inst_type[2];
+    assign typeU = inst_type[1];
+    assign typeJ = inst_type[0];
+    reg rjumpf, rbranchf,
+        rmemloadf,
+        rmemstoref,
+        raluarg1sel,
+        raluarg2sel,
+        raluopf, nzerordf, nzerors1f; //, nzerors2f;
+    //~ assign  jumpf = rjumpf; 
+    //~ assign  branchf = rbranchf;
+    assign  jumpf = rjumpf;
+    assign  branch_ready = func3[0]^( ((~func3[2]) & eq) | (func3[2] & (((~func3[1]) & lt) | (func3[1] & ltu))) );
+    assign  branchf = rbranchf & branch_ready;
+    assign  memloadf = rmemloadf;
+    assign  memstoref = rmemstoref;
+    assign  aluarg1sel = raluarg1sel; // if 1 then pc, else rs1
+    assign  aluarg2sel = raluarg2sel; // if 1 then imm, else rs2
+    assign  aluopf = raluopf;
+
+    always @(opcode[5:2]) begin // all noncompressed instructions end with 11,
+        rmemloadf = 0;
+        rmemstoref = 0;
+        rjumpf = 0;
+        rbranchf = 0;
+        rdest_reg_we = 0;
+        raluopf = 0;
+        nzerordf = 1; nzerors1f = 1; //nzerors2f = 1;
+        case(opcode[5:2]):      // so for now forget about opcode[1:0]
+            0'b01_100   : begin inst_type = 6'b100_000; raluopf = 1;end // R ALU OP
+            0'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
+            0'b11_001   : begin inst_type = 6'b010_000; rjumpf = 1; raluarg2sel = 1; end // I JALR
+            0'b00_000   : begin inst_type = 6'b010_000; rmemloadf = 1; raluarg2sel = 1; end // I LOAD
+            0'b01_000   : begin inst_type = 6'b001_000; rmemstoref = 1; end // S STORE
+            0'b11_000   : begin inst_type = 6'b000_100; nzerordf = 0; rbranchf = 1; end // B
+            0'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; end // U LUI
+            0'b00_101   : begin inst_type = 6'b000_010; raluarg1sel = 1; raluarg2sel = 1; end // U AUIPC
+            0'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
+            default     : begin inst_type = 6'b000_000; end // NOP
+        endcase
+    end
+    assign opcode = instruction[6:0];   // cut instruction into pieces
     assign func3 = instruction[14:12];
-    assign func3 = instruction[31:25];
-    assign source_reg1 = instruction[19:15];
-    assign source_reg2 = instruction[24:20];
-    assign typeb = opcode
-    assign we_rd = ~typeb & ~types;
-    assign dest_reg = instruction[11:7] & {5{we}};
+    assign func7 = instruction[31:25];
+    assign selectop = {func7[5], func3[2:0]} & {4{aluopf}};
+    assign source_reg1  = instruction[19:15] & {32{nzerors1f}};
+    assign source_reg2  = instruction[24:20]; // & {32{nzerors2f}};
+    assign dest_reg     = instruction[11:7]  & {32{nzerordf}};
+    assign immsign = instruction[31];
+    //~ assign imm11_0 = instruction[];
+    //~ assign imm19_12 = instruction[];
+    assign imm20U = {instruction[31:12], 12'b0};
+    assign imm20J = {12{immsign}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
+    assign imm11IS = typeS ? {instruction[30:25], instruction[11:7]} : instruction[30:20];
+    assign imm12IS = {21{immsign}, imm11IS};
+    assign imm12B = {20{immsign}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
+    assign imm12 = typeB ? imm12B : imm12IS;
+    assign imm20 = typeJ ? imm20J : imm20U;
+    assign imm = (typeJ | typeU) ? imm20 : imm12;
     
 endmodule
 
@@ -38,11 +106,10 @@ module cpu (
     input wire [31:0] from_memory,
     input wire sys_clk, sys_reset,
     output wire [31:0] to_memory, memory_address, progctr
-    output wire memstore_flag;
+    output wire memload_flag, memstore_flag;
     );
-    
-    wire branchf, jumpf, memloadf, memstoref, regfile_we;
-    wire [1:0] aluarg2sel;
+    wire branchf, jumpf, aluarg1sel, aluarg2sel, memloadf, memstoref, regfile_we;
+    //~ wire [1:0] aluarg2sel;
     wire [3:0] selectop;
     wire [4:0] dest_reg, source_reg1, source_reg2;
     wire [6:0] aluflags;
@@ -52,10 +119,10 @@ module cpu (
     RV32I_decoder_unit dcu (
     .instruction (instruction),
     .aluflags (aluflags),
-    .imm12 (imm12), .imm20 (imm20),
+    .imm (imm), //.imm20 (imm20),
     .jumpf (jumpf), .branchf (branchf),
     .memloadf (memloadf), .memstoref (memstoref),
-    .aluarg2sel (aluarg2sel), .selectop (selectop),
+    .(aluarg1sel), .aluarg2sel (aluarg2sel), .selectop (selectop),
     .dest_reg (dest_reg), .source_reg1 (source_reg1), .source_reg2 (source_reg2),
     .dest_reg_we(regfile_we)
     );
@@ -64,31 +131,34 @@ module cpu (
     assign pc_imm_step = branchf ? imm12 : 4;
     assign pc_adder = pc + pc_imm_step;
     assign next_pc = jumpf ? aluresult : pc_adder;
-    assign aluarg1 = jumpf ? pc : drs1;
-    mux aluarg2mux (
-                    .indata ({
-                    drs2, imm12, imm20, 32'b0 // TODO: checkout order
-                    }),
-            .select (aluarg2sel),
-            .outdata (aluarg2)
-    );
-    // for writing into memory
-    assign memaddr = aluresult; // TODO: improve
+    assign aluarg1 = aluarg1sel ? pc    : drs1;
+    assign aluarg2 = aluarg2sel ? imm   : drs2;
+    //~ mux aluarg2mux #(32, 2) ( // 4 to 1 mux32
+                    //~ .indata ({
+                    //~ drs2, imm12, imm20, 32'b0 // TODO: checkout order
+                    //~ }),
+            //~ .select (aluarg2sel),
+            //~ .outdata (aluarg2)
+    //~ );
+    // reading from/writing into memory
+    assign memaddr = aluresult; // TODO: add LB/LH/LW and LBU/LHU
     assign memory_address = memaddr;
     assign to_memory = drs2;
     assign memstore_flag = memstoref;
+    assign memload_flag = memloadf;
+
     // generating input to regfile
     assign memloaded_aluresult = memloadf ? from_memory : aluresult;
     assign regfile_indata = jumpf ? pc_adder : memloaded_aluresult;
-    
+
     ALU32I ALU(
     .a (aluarg1),
     .b (aluarg2),
     .selectop (selectop), // {funct7[5], funct3[2:0]}
     .out (aluresult),
     .neq (aluflags[0]),
-    .eq (aluflags[1]), 
-    .lt (aluflags[2]), 
+    .eq (aluflags[1]),
+    .lt (aluflags[2]),
     .ge (aluflags[3]),
     .ltu (aluflags[4]),
     .geu (aluflags[5]),
