@@ -1,6 +1,6 @@
 // Copyright 2024-2025 Fe-Ti
 //~ `include "./mux.v"
-//~ `include "./alu.v"
+`include "./alu.v"
 `include "./register.v"
 
 module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
@@ -58,13 +58,13 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     assign  aluarg1sel = raluarg1sel; // if 1 then pc, else rs1
     assign  aluarg2sel = raluarg2sel; // if 1 then imm, else rs2
     assign  aluopf = raluopf;
+    assign  dest_reg_we = 1;
 
     always @(opcode[5:2]) begin // all noncompressed instructions end with 11,
         rmemloadf = 0;
         rmemstoref = 0;
         rjumpf = 0;
         rbranchf = 0;
-        rdest_reg_we = 0;
         raluopf = 0;
         nzerordf = 1; nzerors1f = 1; //nzerors2f = 1;
         case(opcode[6:2])      // so for now forget about opcode[1:0]
@@ -72,7 +72,7 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
             5'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
             5'b11_001   : begin inst_type = 6'b010_000; rjumpf = 1; raluarg2sel = 1; end // I JALR
             5'b00_000   : begin inst_type = 6'b010_000; rmemloadf = 1; raluarg2sel = 1; end // I LOAD
-            5'b01_000   : begin inst_type = 6'b001_000; rmemstoref = 1; end // S STORE
+            5'b01_000   : begin inst_type = 6'b001_000; nzerordf = 0; rmemstoref = 1; end // S STORE
             5'b11_000   : begin inst_type = 6'b000_100; nzerordf = 0; rbranchf = 1; end // B
             5'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; end // U LUI
             5'b00_101   : begin inst_type = 6'b000_010; raluarg1sel = 1; raluarg2sel = 1; end // U AUIPC
@@ -88,8 +88,6 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     assign source_reg2  = instruction[24:20]; // & {32{nzerors2f}};
     assign dest_reg     = instruction[11:7]  & {32{nzerordf}};
     assign immsign = instruction[31];
-    //~ assign imm11_0 = instruction[];
-    //~ assign imm19_12 = instruction[];
     assign imm20U = {instruction[31:12], 12'b0};
     assign imm20J = {{12{immsign}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
     assign imm11IS = typeS ? {instruction[30:25], instruction[11:7]} : instruction[30:20];
@@ -98,14 +96,13 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     assign imm12 = typeB ? imm12B : imm12IS;
     assign imm20 = typeJ ? imm20J : imm20U;
     assign imm = (typeJ | typeU) ? imm20 : imm12;
-    
 endmodule
 
 module cpu (
     input wire [31:0] instruction,
     input wire [31:0] from_memory,
     input wire sys_clk, sys_reset,
-    output wire [31:0] to_memory, memory_address, progctr,
+    output wire [31:0] to_memory, memory_address, progctr, // next_pc,
     output wire memload_flag, memstore_flag
     );
     wire branchf, jumpf, aluarg1sel, aluarg2sel, memloadf, memstoref, regfile_we;
@@ -113,7 +110,8 @@ module cpu (
     wire [3:0] selectop;
     wire [4:0] dest_reg, source_reg1, source_reg2;
     wire [6:0] aluflags;
-    wire [31:0] memaddr, next_pc, imm12, imm20, aluarg1, aluarg2, aluresult, regfile_indata;
+    wire [31:0] memaddr, next_pc, imm, aluarg1, aluarg2, aluresult, regfile_indata;
+    wire [31:0] drs1, drs2;
     reg [31:0]  pc; // program ctr
 
     RV32I_decoder_unit dcu (
@@ -128,9 +126,15 @@ module cpu (
     );
     
     assign progctr = pc;
-    assign pc_imm_step = branchf ? imm12 : 4;
+    assign pc_imm_step = branchf ? imm : 4;
     assign pc_adder = pc + pc_imm_step;
     assign next_pc = jumpf ? aluresult : pc_adder;
+    always @(posedge sys_clk or posedge sys_reset) begin
+        if (sys_reset)
+            pc <= 0;
+        else
+            pc <= next_pc;
+    end
     assign aluarg1 = aluarg1sel ? pc    : drs1;
     assign aluarg2 = aluarg2sel ? imm   : drs2;
     //~ mux aluarg2mux #(32, 2) ( // 4 to 1 mux32

@@ -1,6 +1,6 @@
 // Copyright 2024-2025 Fe-Ti
 //~ `include "./mux.v"
-`include "./alu.v"
+//~ `include "./alu.v"
 
 module RV32I_register_file(
     input wire sys_clk, sys_reset,
@@ -12,14 +12,21 @@ module RV32I_register_file(
     reg [31:0] x[31:0];
     wire [31:0] xzero;
     assign xzero = 0;
-    always @(posedge sys_clk or posedge sys_reset) begin // 4750
-        if (sys_reset)
-            for (integer i = 1; i < 32; i = i + 1) begin
-                x[i] <= 0;
-            end
-        else if (we)
+    always @(posedge sys_clk) begin // 8k+ // but in full design somehow it's 1.1k
+        if (we)
             x[rd] <= indata;
     end
+    assign outdata_rs1[31:0] = (rs1 != 0) ? x[rs1] : 32'b0;
+    assign outdata_rs2[31:0] = (rs2 != 0) ? x[rs2] : 32'b0;
+endmodule
+    //~ always @(posedge sys_clk or posedge sys_reset) begin // 4750
+        //~ if (sys_reset)
+            //~ for (integer i = 1; i < 32; i = i + 1) begin
+                //~ x[i] <= 0;
+            //~ end
+        //~ else if (we)
+            //~ x[rd] <= indata;
+    //~ end
     //~ always @(posedge sys_clk or posedge sys_reset) begin // 3147
         //~ if (sys_reset)
             //~ for (integer i = 1; i < 32; i = i + 1) begin
@@ -28,59 +35,53 @@ module RV32I_register_file(
         //~ else if (sys_clk)
             //~ x[rd & {5{we}}] = indata;
     //~ end
-    mux rs1_mux (
-            .indata ({
-                    xzero,
-                    x[1], x[2],
-                    x[3], x[4],
-                    x[5], x[6],
-                    x[7], x[8],
-                    x[9], x[10],
-                    x[11], x[12],
-                    x[13], x[14],
-                    x[15], x[16],
-                    x[17], x[18],
-                    x[19], x[20],
-                    x[21], x[22],
-                    x[23], x[24],
-                    x[25], x[26],
-                    x[27], x[28],
-                    x[29], x[30],
-                    x[31]
-                    }),
-            .select (rs1),
-            .outdata (outdata_rs1)
-        );
-    mux rs2_mux (
-            .indata ({
-                    xzero,
-                    x[1], x[2],
-                    x[3], x[4],
-                    x[5], x[6],
-                    x[7], x[8],
-                    x[9], x[10],
-                    x[11], x[12],
-                    x[13], x[14],
-                    x[15], x[16],
-                    x[17], x[18],
-                    x[19], x[20],
-                    x[21], x[22],
-                    x[23], x[24],
-                    x[25], x[26],
-                    x[27], x[28],
-                    x[29], x[30],
-                    x[31]
-                    }),
-            .select (rs2),
-            .outdata (outdata_rs2)
-        );
-    //~ always @(posedge sys_clk) begin // 8k+
-        //~ if (we)
-            //~ x[rd] <= indata;
-    //~ end
-    //~ assign outdata_rs1 = (rs1 != 0) ? x[rs1] : 0;
-    //~ assign outdata_rs2 = (rs2 != 0) ? x[rs2] : 0;
-endmodule
+    //~ mux rs1_mux (
+            //~ .indata ({
+                    //~ xzero,
+                    //~ x[1], x[2],
+                    //~ x[3], x[4],
+                    //~ x[5], x[6],
+                    //~ x[7], x[8],
+                    //~ x[9], x[10],
+                    //~ x[11], x[12],
+                    //~ x[13], x[14],
+                    //~ x[15], x[16],
+                    //~ x[17], x[18],
+                    //~ x[19], x[20],
+                    //~ x[21], x[22],
+                    //~ x[23], x[24],
+                    //~ x[25], x[26],
+                    //~ x[27], x[28],
+                    //~ x[29], x[30],
+                    //~ x[31]
+                    //~ }),
+            //~ .select (rs1),
+            //~ .outdata (outdata_rs1)
+        //~ );
+    //~ mux rs2_mux (
+            //~ .indata ({
+                    //~ xzero,
+                    //~ x[1], x[2],
+                    //~ x[3], x[4],
+                    //~ x[5], x[6],
+                    //~ x[7], x[8],
+                    //~ x[9], x[10],
+                    //~ x[11], x[12],
+                    //~ x[13], x[14],
+                    //~ x[15], x[16],
+                    //~ x[17], x[18],
+                    //~ x[19], x[20],
+                    //~ x[21], x[22],
+                    //~ x[23], x[24],
+                    //~ x[25], x[26],
+                    //~ x[27], x[28],
+                    //~ x[29], x[30],
+                    //~ x[31]
+                    //~ }),
+            //~ .select (rs2),
+            //~ .outdata (outdata_rs2)
+        //~ );
+
 
 //// other regfile implementations
     //~ always @(posedge sys_clk or posedge sys_reset) begin // 4809
