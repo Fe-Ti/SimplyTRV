@@ -1,6 +1,7 @@
 // Copyright 2024-2025 Fe-Ti
 //~ `include "./mux.v"
 //~ `include "./alu.v"
+`default_nettype none
 
 module RV32I_register_file(
     input wire sys_clk, sys_reset,

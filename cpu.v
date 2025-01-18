@@ -2,6 +2,7 @@
 //~ `include "./mux.v"
 `include "./alu.v"
 `include "./register.v"
+`default_nettype none
 
 module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     input wire [31:0]   instruction,
@@ -30,7 +31,7 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
     assign zerof = aluflags[6];
     wire we_rd, typeR, typeI, typeS, typeB, typeU, typeJ;
     wire immsign, aluopf;
-    wire [2:1] func3;
+    wire [2:0] func3;
     reg  [5:0] inst_type;
     wire [6:0] opcode, func7;
     wire [10:0] imm11IS;
@@ -48,25 +49,20 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
         raluarg1sel,
         raluarg2sel,
         raluopf, nzerordf, nzerors1f; //, nzerors2f;
-    //~ assign  jumpf = rjumpf; 
-    //~ assign  branchf = rbranchf;
-    assign  jumpf = rjumpf;
-    assign  branch_ready = func3[0]^( ((~func3[2]) & eq) | (func3[2] & (((~func3[1]) & lt) | (func3[1] & ltu))) );
-    assign  branchf = rbranchf & branch_ready;
-    assign  memloadf = rmemloadf;
-    assign  memstoref = rmemstoref;
-    assign  aluarg1sel = raluarg1sel; // if 1 then pc, else rs1
-    assign  aluarg2sel = raluarg2sel; // if 1 then imm, else rs2
-    assign  aluopf = raluopf;
     assign  dest_reg_we = 1;
 
-    always @(opcode[5:2]) begin // all noncompressed instructions end with 11,
+    assign opcode = instruction[6:0];   // cut instruction into pieces
+    assign func3 = instruction[14:12];
+    assign func7 = instruction[31:25];
+
+    always @(opcode[6:2]) begin // all noncompressed instructions end with 11,
         rmemloadf = 0;
         rmemstoref = 0;
         rjumpf = 0;
         rbranchf = 0;
         raluopf = 0;
         nzerordf = 1; nzerors1f = 1; //nzerors2f = 1;
+        raluarg1sel = 0; raluarg2sel = 0;
         case(opcode[6:2])      // so for now forget about opcode[1:0]
             5'b01_100   : begin inst_type = 6'b100_000; raluopf = 1;end // R ALU OP
             5'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
@@ -79,10 +75,19 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
             5'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
             default     : begin inst_type = 6'b000_000; end // NOP
         endcase
+        $display("rmemloadf=%h; rmemstoref=%h; rjumpf=%h; rbranchf=%h; raluopf=%h; nzerordf=%h; nzerors1f=%h;\n func7[5]=%h, func3[2:0]=%h",
+            rmemloadf, rmemstoref, rjumpf, rbranchf, raluopf, nzerordf, nzerors1f,func7[5], func3[2:0]);
     end
-    assign opcode = instruction[6:0];   // cut instruction into pieces
-    assign func3 = instruction[14:12];
-    assign func7 = instruction[31:25];
+    // Todo refactor below:
+    assign  jumpf = rjumpf;
+    assign  branch_ready = func3[0]^( ((~func3[2]) & eq) | (func3[2] & (((~func3[1]) & lt) | (func3[1] & ltu))) );
+    assign  branchf = rbranchf & branch_ready;
+    assign  memloadf = rmemloadf;
+    assign  memstoref = rmemstoref;
+    assign  aluarg1sel = raluarg1sel; // if 1 then pc, else rs1
+    assign  aluarg2sel = raluarg2sel; // if 1 then imm, else rs2
+    assign  aluopf = raluopf;
+    
     assign selectop = {func7[5], func3[2:0]} & {4{aluopf}};
     assign source_reg1  = instruction[19:15] & {32{nzerors1f}};
     assign source_reg2  = instruction[24:20]; // & {32{nzerors2f}};
@@ -111,7 +116,7 @@ module cpu (
     wire [4:0] dest_reg, source_reg1, source_reg2;
     wire [6:0] aluflags;
     wire [31:0] memaddr, next_pc, imm, aluarg1, aluarg2, aluresult, regfile_indata;
-    wire [31:0] drs1, drs2;
+    wire [31:0] drs1, drs2, pc_imm_step, pc_adder, memloaded_aluresult;
     reg [31:0]  pc; // program ctr
 
     RV32I_decoder_unit dcu (
@@ -126,24 +131,24 @@ module cpu (
     );
     
     assign progctr = pc;
-    assign pc_imm_step = branchf ? imm : 4;
+    assign pc_imm_step = branchf ? imm : 32'd4;
     assign pc_adder = pc + pc_imm_step;
     assign next_pc = jumpf ? aluresult : pc_adder;
     always @(posedge sys_clk or posedge sys_reset) begin
-        if (sys_reset)
-            pc <= 0;
-        else
-            pc <= next_pc;
+        if (sys_reset) begin
+            $display("sysr: inst = %h", instruction);
+            $display("sysr: currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h", pc, next_pc, branchf, imm, jumpf, aluresult);
+            pc <= 0; end
+        else begin
+            $display("inst = %h", instruction);
+            $display("currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h, selectop = %h, rs1 = %h, rs2 = %h, rd = %h,\ndrs1=%h, drs2=%h",
+            pc, next_pc, branchf, imm, jumpf, aluresult, selectop, source_reg1, source_reg2, dest_reg, drs1, drs2);
+            $display("aluarg1 = %h, aluarg2 = %h, argsel1 = %h, argsel2 = %h",aluarg1, aluarg2, aluarg1sel,aluarg2sel);
+            pc <= next_pc;end
     end
     assign aluarg1 = aluarg1sel ? pc    : drs1;
     assign aluarg2 = aluarg2sel ? imm   : drs2;
-    //~ mux aluarg2mux #(32, 2) ( // 4 to 1 mux32
-                    //~ .indata ({
-                    //~ drs2, imm12, imm20, 32'b0 // TODO: checkout order
-                    //~ }),
-            //~ .select (aluarg2sel),
-            //~ .outdata (aluarg2)
-    //~ );
+
     // reading from/writing into memory
     assign memaddr = aluresult; // TODO: add LB/LH/LW and LBU/LHU
     assign memory_address = memaddr;
