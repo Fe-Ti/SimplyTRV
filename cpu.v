@@ -75,8 +75,8 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
             5'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
             default     : begin inst_type = 6'b000_000; end // NOP
         endcase
-        $display("rmemloadf=%h; rmemstoref=%h; rjumpf=%h; rbranchf=%h; raluopf=%h; nzerordf=%h; nzerors1f=%h;\n func7[5]=%h, func3[2:0]=%h",
-            rmemloadf, rmemstoref, rjumpf, rbranchf, raluopf, nzerordf, nzerors1f,func7[5], func3[2:0]);
+        //~ $display("rmemloadf=%h; rmemstoref=%h; rjumpf=%h; rbranchf=%h; raluopf=%h; nzerordf=%h; nzerors1f=%h;\n func7[5]=%h, func3[2:0]=%h",
+            //~ rmemloadf, rmemstoref, rjumpf, rbranchf, raluopf, nzerordf, nzerors1f,func7[5], func3[2:0]);
     end
     // Todo refactor below:
     assign  jumpf = rjumpf;
@@ -136,11 +136,11 @@ module cpu (
     assign next_pc = jumpf ? aluresult : pc_adder;
     always @(posedge sys_clk or posedge sys_reset) begin
         if (sys_reset) begin
-            $display("sysr: inst = %h", instruction);
-            $display("sysr: currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h", pc, next_pc, branchf, imm, jumpf, aluresult);
+            //~ $display("sysr: inst = %h", instruction);
+            //~ $display("sysr: currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h", pc, next_pc, branchf, imm, jumpf, aluresult);
             pc <= 0; end
         else begin
-            $display("inst = %h", instruction);
+            $display("cpu_clk: inst = %h", instruction);
             $display("currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h, selectop = %h, rs1 = %h, rs2 = %h, rd = %h,\ndrs1=%h, drs2=%h",
             pc, next_pc, branchf, imm, jumpf, aluresult, selectop, source_reg1, source_reg2, dest_reg, drs1, drs2);
             $display("aluarg1 = %h, aluarg2 = %h, argsel1 = %h, argsel2 = %h",aluarg1, aluarg2, aluarg1sel,aluarg2sel);
