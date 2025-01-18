@@ -7,8 +7,8 @@ module top (    // Repka-Tang ports                 // onboard ports
                 clk_sys,    sys_reset,              clk_board,
     output wire dataoutbit, memstoref, memloadf
 );
-    reg [31:0] input_regs[4:0];
-    reg [31:0] output_regs[4:0]; 
+    reg [31:0] input_regs[3:0];
+    reg [31:0] output_regs[3:0]; 
     reg [31:0] instruction, from_memory; //, memory_address, to_memory, program_ctr;
     reg [31:0] data_out, data_in;
     wire [31:0] memaddr, memdata, progctr, muxed_out;
@@ -52,7 +52,7 @@ module top (    // Repka-Tang ports                 // onboard ports
             instruction <= 0;
             from_memory <= 0;
             //~ $display("rst: inst = %h", instruction);
-        end
+        end else begin
         output_regs[0] <= progctr; // program_ctr <= progctr;
         output_regs[1] <= memaddr; // memory_address <= memaddr;
         //~ output_regs[2] <= memaddr; // memory_address <= memaddr;
@@ -61,6 +61,7 @@ module top (    // Repka-Tang ports                 // onboard ports
         instruction <= input_regs[2];
         from_memory <= input_regs[0];
         //~ $display("clk_board: inst = %h", instruction);
+        end
     end
 
     // finite state machine (automaton) selects right registers at right time
