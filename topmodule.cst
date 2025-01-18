@@ -1,0 +1,21 @@
+IO_LOC "datainbit" 38;
+IO_PORT "datainbit" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "clk_data" 37;
+IO_PORT "clk_data" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "data_sync_en" 36;
+IO_PORT "data_sync_en" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "clk_sys" 39;
+IO_PORT "clk_sys" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC "sys_reset" 25;
+IO_PORT "sys_reset" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+IO_LOC "dataoutbit" 26;
+IO_PORT "dataoutbit" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "memstoref" 27;
+IO_PORT "memstoref" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "memloadf" 28;
+IO_PORT "memloadf" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+
+IO_LOC "clk_board" 52;
+IO_PORT "clk_board" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
