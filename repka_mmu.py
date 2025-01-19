@@ -192,7 +192,7 @@ class CPU:
         data_i = ''
         message = bin(data_o)[2:].zfill(BUS_W)
         print(f"Transfering data: {message}")
-        for bit in message:
+        for bit in message[::-1]:
             if bit == '1':
                 self.setpin(PIN_DATAINBIT)
             else:
