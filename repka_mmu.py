@@ -200,7 +200,7 @@ class CPU:
             data_i = str(int(self.getpinval(PIN_DATAOUTBIT))) + data_i
             self.pulse_clk_data()
         print(f"Recieved data: {data_i}")
-        return int(data_i)
+        return int(data_i,2)
 
     def tic(self):
         # sync
