@@ -213,8 +213,7 @@ class CPU:
         # ~ instruction = {program[pc[31:2]][3],program[pc[31:2]][2],program[pc[31:2]][1],program[pc[31:2]][0]};
         instruction_str = ""
         for j in range(BUS_W_IN_BYTES):
-            # ~ print(f"{hex(program[i*BUS_W_IN_BYTES+j])[2:].zfill(2)}", end=' ')
-            instruction_str += bin(program[pc*BUS_W_IN_BYTES+j])[2:].zfill(8)
+            instruction_str += bin(program[pc+j])[2:].zfill(8)
         instruction = int(instruction_str,2)
         print(f"INST = {hex(instruction)}")
         self.transfer_data(instruction)
@@ -263,6 +262,7 @@ command_run = "run"
 command_prtmem = "prtmem"
 command_prtprog = "prtprog"
 command_reset = "reset"
+
 commands = [command_exit, command_help, command_run, command_tic, command_prtmem, command_prtprog, command_reset]
 
 user_input = ""

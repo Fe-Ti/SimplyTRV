@@ -68,15 +68,16 @@ module RV32I_decoder_unit ( // get imm-s and decode inst to 'flags'
             5'b00_100   : begin inst_type = 6'b010_000; raluopf = 1; raluarg2sel = 1; end // I ALU OP
             5'b11_001   : begin inst_type = 6'b010_000; rjumpf = 1; raluarg2sel = 1; end // I JALR
             5'b00_000   : begin inst_type = 6'b010_000; rmemloadf = 1; raluarg2sel = 1; end // I LOAD
-            5'b01_000   : begin inst_type = 6'b001_000; nzerordf = 0; rmemstoref = 1; end // S STORE
+            5'b01_000   : begin inst_type = 6'b001_000; nzerordf = 0; rmemstoref = 1; raluarg2sel = 1; end // S STORE
             5'b11_000   : begin inst_type = 6'b000_100; nzerordf = 0; rbranchf = 1; end // B
-            5'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; end // U LUI
+            5'b01_101   : begin inst_type = 6'b000_010; nzerors1f = 0; raluarg2sel = 1; end // U LUI
             5'b00_101   : begin inst_type = 6'b000_010; raluarg1sel = 1; raluarg2sel = 1; end // U AUIPC
-            5'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg2sel = 1; end // J JAL
+            5'b11_011   : begin inst_type = 6'b000_001; rjumpf = 1; nzerors1f = 0; raluarg1sel = 1; raluarg2sel = 1; end // J JAL
             default     : begin inst_type = 6'b000_000; end // NOP
         endcase
-        //~ $display("rmemloadf=%h; rmemstoref=%h; rjumpf=%h; rbranchf=%h; raluopf=%h; nzerordf=%h; nzerors1f=%h;\n func7[5]=%h, func3[2:0]=%h",
-            //~ rmemloadf, rmemstoref, rjumpf, rbranchf, raluopf, nzerordf, nzerors1f,func7[5], func3[2:0]);
+        $display("rmemloadf=%h; rmemstoref=%h; rjumpf=%h; rbranchf=%h; raluopf=%h; nzerordf=%h; nzerors1f=%h;\n func7[5]=%h, func3[2:0]=%h",
+            rmemloadf, rmemstoref, rjumpf, rbranchf, raluopf, nzerordf, nzerors1f,func7[5], func3[2:0]);
+        $display("branch ready=%b, rbranchf=%b, branchf=%b, aluflags = %b, insttype=%b, opcode=%b", branch_ready, rbranchf,branchf, aluflags,inst_type,opcode);
     end
     // Todo refactor below:
     assign  jumpf = rjumpf;
@@ -141,9 +142,9 @@ module cpu (
             pc <= 0; end
         else begin
             $display("cpu_clk: inst = %h", instruction);
-            $display("currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h, selectop = %h, rs1 = %h, rs2 = %h, rd = %h,\ndrs1=%h, drs2=%h",
+            $display("cpu_clk: currpc = %h, next = %h, branchf = %h, imm = %h, jumpf = %h, aluresult = %h, selectop = %h, rs1 = %h, rs2 = %h, rd = %h,\ndrs1=%h, drs2=%h",
             pc, next_pc, branchf, imm, jumpf, aluresult, selectop, source_reg1, source_reg2, dest_reg, drs1, drs2);
-            $display("aluarg1 = %h, aluarg2 = %h, argsel1 = %h, argsel2 = %h",aluarg1, aluarg2, aluarg1sel,aluarg2sel);
+            $display("cpu_clk: aluarg1 = %h, aluarg2 = %h, argsel1 = %h, argsel2 = %h",aluarg1, aluarg2, aluarg1sel,aluarg2sel);
             pc <= next_pc;end
     end
     assign aluarg1 = aluarg1sel ? pc    : drs1;

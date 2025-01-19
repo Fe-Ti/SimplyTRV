@@ -12,6 +12,7 @@ module top (    // Repka-Tang ports                 // onboard ports
     reg [31:0] instruction, from_memory; //, memory_address, to_memory, program_ctr;
     reg [31:0] data_out, data_in;
     wire [31:0] memaddr, memdata, progctr, muxed_out;
+
     
     reg [1:0] state;
     reg [4:0] counter;
@@ -54,8 +55,8 @@ module top (    // Repka-Tang ports                 // onboard ports
             //~ $display("rst: inst = %h", instruction);
         end else begin
         output_regs[0] <= progctr; // program_ctr <= progctr;
-        output_regs[1] <= memaddr; // memory_address <= memaddr;
-        //~ output_regs[2] <= memaddr; // memory_address <= memaddr;
+        //~ output_regs[1] <= memaddr; // memory_address <= memaddr;
+        output_regs[2] <= memaddr; // memory_address <= memaddr;
         output_regs[3] <= memdata; // to_memory <= memdata;
         //~ instruction <= input_regs[1];
         instruction <= input_regs[2];
