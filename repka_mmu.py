@@ -149,7 +149,7 @@ class CPU:
 
     def resetpin(self, pin):
         # ~ print(f"GPIO.output({pin}, 0)")
-        GPIO.output(self,pin, 0)
+        GPIO.output(pin, 0)
         self.wait()
 
     def getpinval(self, pin):
@@ -277,6 +277,7 @@ while user_input != command_exit:
         print(HELP_TXT)
     elif splitted_input[0] == command_exit:
         print('Bye!')
+        GPIO.cleanup()
         exit(0)
     elif splitted_input[0] == command_prtprog:
         print("Here is your program:")
